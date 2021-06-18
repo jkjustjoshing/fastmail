@@ -31,7 +31,6 @@ const config: Config[] = [
     }
   }
 ]
-
 export default config
 
 type Config = {

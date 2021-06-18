@@ -1,17 +1,16 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
 import fetch from 'node-fetch';
-import config from '../../src/config';
+import config from './config';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+const mail = async () => {
   let session = await (await fetch('https://jmap.fastmail.com/.well-known/jmap', {
     headers: {
-      "Authorization": req.headers.authorization
+      "Authorization": process.env.AUTHORIZATION
     }
   })).json();
 
   let accountId = session['primaryAccounts']['urn:ietf:params:jmap:mail'];
 
-  const request = getRequest(req.headers.authorization, accountId)
+  const request = getRequest(process.env.AUTHORIZATION, accountId)
 
   let [mailboxes] = await request('Mailbox/get', { ids: null })
 
@@ -32,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!mails.some(m => m.ids.length)) {
     console.log('Ran, nothing to do')
-    return res.end('OK')
+    return
   }
   console.log(config.map((c, index) => {
     const count = mails[index].ids.length
@@ -61,7 +60,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     archived: update.filter(u => u[1][`mailboxIds/${archive.id}`]).length,
     markedRead: update.filter(u => u[1][`keywords/$seen`]).length
   })
-  return res.end('OK')
 }
 
 const getRequest = (auth, accountId) => async (...args) => {
@@ -98,3 +96,7 @@ const hoursPast = hours => {
   d.setHours(d.getHours() - hours)
   return d.toISOString().replace(/\.\d+Z/, 'Z')
 }
+
+// Execute
+mail()
+
