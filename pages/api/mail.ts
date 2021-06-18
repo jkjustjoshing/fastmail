@@ -3,18 +3,15 @@ import fetch from 'node-fetch';
 import config from '../../src/config';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  let username = process.env.FASTMAIL_USERNAME;
-  let password = process.env.FASTMAIL_PASSWORD;
-  let authBasic = Buffer.from(username + ':' + password).toString('base64');
   let session = await (await fetch('https://jmap.fastmail.com/.well-known/jmap', {
     headers: {
-      "Authorization": "Basic " + authBasic
+      "Authorization": req.headers.authorization
     }
   })).json();
 
   let accountId = session['primaryAccounts']['urn:ietf:params:jmap:mail'];
 
-  const request = getRequest(authBasic, accountId)
+  const request = getRequest(req.headers.authorization, accountId)
 
   let [mailboxes] = await request('Mailbox/get', { ids: null })
 
@@ -67,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   return res.end('OK')
 }
 
-const getRequest = (authBasic, accountId) => async (...args) => {
+const getRequest = (auth, accountId) => async (...args) => {
 
   const methodCalls = []
   for(let i = 0; i < args.length; ++i) {
@@ -87,7 +84,7 @@ const getRequest = (authBasic, accountId) => async (...args) => {
     method: 'POST',
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Basic " + authBasic
+      "Authorization": auth
     },
     body: JSON.stringify(query)
   })
