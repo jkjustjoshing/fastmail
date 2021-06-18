@@ -23,6 +23,7 @@ const mail = async () => {
       filter: {
         inMailbox: c.search.in === 'inbox' ? inbox.id : c.search.in === 'archive' ? archive.id : undefined,
         from: c.search.from,
+        subject: c.search.subject,
         before: c.search.before,
         notKeyword: c.search.isUnread ? '$seen' : undefined
       }

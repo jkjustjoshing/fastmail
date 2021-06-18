@@ -29,6 +29,19 @@ const config: Config[] = [
     action: {
       markRead: true
     }
+  },
+  {
+    name: 'This Week at The Little',
+    search: {
+      in: 'inbox',
+      before: hoursPast(48),
+      from: 'thelittle.org',
+      subject: 'This Week at The Little'
+    },
+    action: {
+      markRead: true,
+      archive: true
+    }
   }
 ]
 export default config
@@ -39,6 +52,7 @@ type Config = {
     in?: 'inbox' | 'archive',
     before?: string,
     from?: string,
+    subject?: string,
     isUnread?: boolean
   },
   action: {
