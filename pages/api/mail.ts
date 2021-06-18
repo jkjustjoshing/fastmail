@@ -1,10 +1,11 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-const fetch = require('node-fetch');
+import type { NextApiRequest, NextApiResponse } from 'next'
+import fetch from 'node-fetch';
+import config from '../../src/config';
 
-export default async function handler(req, res) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   let username = process.env.FASTMAIL_USERNAME;
   let password = process.env.FASTMAIL_PASSWORD;
-  let authBasic = Buffer(username + ':' + password).toString('base64');
+  let authBasic = Buffer.from(username + ':' + password).toString('base64');
   let session = await (await fetch('https://jmap.fastmail.com/.well-known/jmap', {
     headers: {
       "Authorization": "Basic " + authBasic
@@ -15,50 +16,72 @@ export default async function handler(req, res) {
 
   const request = getRequest(authBasic, accountId)
 
-  let mailboxes = await request('Mailbox/get', { ids: null })
+  let [mailboxes] = await request('Mailbox/get', { ids: null })
 
   const inbox = mailboxes.list.find(mailbox => mailbox.role === 'inbox')
   const archive = mailboxes.list.find(mailbox => mailbox.role === 'archive')
 
-  let mail = await request('Email/query', {
-    filter: {
-      inMailbox: inbox.id,
-      from: 'usps',
-      before: hoursPast(30)
-    },
-    sort: [
-      { property: 'receivedAt', isAscending: false }
-    ],
-    position: 0,
-    collapseThreads: true,
-    limit: 13,
-    calculateTotal: true
+  let mails = await request(...config.flatMap(c => [
+    'Email/query',
+    {
+      filter: {
+        inMailbox: c.search.in === 'inbox' ? inbox.id : c.search.in === 'archive' ? archive.id : undefined,
+        from: c.search.from,
+        before: c.search.before,
+        notKeyword: c.search.isUnread ? '$seen' : undefined
+      }
+    }
+  ]))
+
+  if (!mails.some(m => m.ids.length)) {
+    console.log('Ran, nothing to do')
+    return res.end('OK')
+  }
+  console.log(config.map((c, index) => {
+    const count = mails[index].ids.length
+    if (!count) return null
+    return {
+      name: c.name,
+      count
+    }
+  }).filter(Boolean))
+
+  const update = mails.flatMap((mail, index) => {
+    const configItem = config[index]
+    return mail.ids.map(mailId => [
+      mailId,
+      {
+        [`mailboxIds/${archive.id}`]: configItem.action.archive ? true : undefined,
+        [`mailboxIds/${inbox.id}`]: configItem.action.archive ? null : undefined,
+        'keywords/$seen': configItem.action.markRead ? true : undefined
+      }
+    ])
   })
 
-  let mailContent = await request('Email/get', { ids: mail.ids, properties: [ 'threadId' ] })
+  await request('Email/set', { update: Object.fromEntries(update) })
 
-  await request('Email/set', {
-    update: Object.fromEntries(mailContent.list.map(mc => {
-      return [mc.id, {
-        [`mailboxIds/${archive.id}`]: true,
-        [`mailboxIds/${inbox.id}`]: null
-      }]
-    }))
+  console.log({
+    archived: update.filter(u => u[1][`mailboxIds/${archive.id}`]).length,
+    markedRead: update.filter(u => u[1][`keywords/$seen`]).length
   })
-
-  // let threadItemIds = await request('Thread/get', { ids: mailContent.list.map(c => c.threadId) })
-
-  // let threadItems = await request('Email/get', {
-  //   ids: threadItemIds.list.flatMap(t => t.emailIds),
-  //   // fetchTextBodyValues: true
-  // })
-  res.json({ numberArchived: mailContent.list.length })
+  return res.end('OK')
 }
 
-const getRequest = (authBasic, accountId) => async (method, args) => {
+const getRequest = (authBasic, accountId) => async (...args) => {
+
+  const methodCalls = []
+  for(let i = 0; i < args.length; ++i) {
+    if (i % 2 === 0) {
+      methodCalls.push([args[i]])
+    } else {
+      methodCalls[methodCalls.length - 1].push({ accountId, ...args[i] })
+      methodCalls[methodCalls.length - 1].push(String(methodCalls.length - 1))
+    }
+  }
+
   let query = {
     using: [ "urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail" ],
-    methodCalls: [[method, { accountId, ...args}, "0" ]]
+    methodCalls
   }
   const req = await fetch('https://jmap.fastmail.com/api/', {
     method: 'POST',
@@ -69,7 +92,8 @@ const getRequest = (authBasic, accountId) => async (method, args) => {
     body: JSON.stringify(query)
   })
 
-  return (await req.json()).methodResponses[0][1];
+  const json = await req.json()
+  return json.methodResponses.map(r => r[1])
 }
 
 const hoursPast = hours => {
