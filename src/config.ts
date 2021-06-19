@@ -55,6 +55,19 @@ const config: Config[] = [
       markRead: true,
       archive: true
     }
+  },
+  {
+    name: 'League of Women Voters RMA',
+    search: {
+      in: 'inbox',
+      before: hoursPast(5 * 24),
+      isUnread: true,
+      from: 'lwv-rma.org'
+    },
+    action: {
+      markRead: true,
+      archive: true
+    }
   }
 ]
 export default config
