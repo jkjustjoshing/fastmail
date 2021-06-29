@@ -68,6 +68,19 @@ const config: Config[] = [
       markRead: true,
       archive: true
     }
+  },
+  {
+    name: `Scott's Cheap Flights`,
+    search: {
+      in: 'inbox',
+      before: hoursPast(6),
+      from: 'hello@deals.scottscheapflights.com',
+      allowPreventArchive: true
+    },
+    action: {
+      markRead: true,
+      archive: true
+    }
   }
 ]
 export default config
@@ -79,7 +92,8 @@ type Config = {
     before?: string,
     from?: string,
     subject?: string,
-    isUnread?: boolean
+    isUnread?: boolean,
+    allowPreventArchive?: true
   },
   action: {
     archive?: boolean,
