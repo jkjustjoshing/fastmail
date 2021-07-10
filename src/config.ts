@@ -81,6 +81,64 @@ const config: Config[] = [
       markRead: true,
       archive: true
     }
+  },
+  {
+    name: 'YJR',
+    search: {
+      in: 'inbox',
+      before: hoursPast(24),
+      from: 'events@yellowjacketracing.com',
+      allowPreventArchive: true
+    },
+    action: { markRead: true, archive: true }
+  },
+  {
+    name: 'Fleet Feet',
+    search: {
+      in: 'inbox',
+      before: hoursPast(24),
+      from: 'hello@email.fleetfeet.com',
+      allowPreventArchive: true
+    },
+    action: { markRead: true, archive: true }
+  },
+  {
+    name: 'Fleet Feet Ellen',
+    search: {
+      in: 'inbox',
+      before: hoursPast(24),
+      from: 'ellen@fleetfeetrochester.com',
+      allowPreventArchive: true
+    },
+    action: { markRead: true, archive: true }
+  },
+  {
+    name: '540 West Main',
+    search: {
+      in: 'inbox',
+      before: hoursPast(24 * 3),
+      from: '540westmain@kramer.run',
+      allowPreventArchive: true
+    },
+    action: { markRead: true, archive: true }
+  },
+  {
+    name: 'Receipts',
+    search: {
+      in: 'inbox',
+      before: hoursPast(18),
+      from: 'receipts@messaging.squareup.com',
+    },
+    action: { markRead: true, archive: true }
+  },
+  {
+    name: 'Chortke Receipts',
+    search: {
+      in: 'inbox',
+      before: hoursPast(18),
+      from: 'chortke@kramer.run',
+    },
+    action: { markRead: true, archive: true }
   }
 ]
 export default config
