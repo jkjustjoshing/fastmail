@@ -1,1 +1,1 @@
-* * * * * /usr/src/app/run.sh  >> /var/log/mail.log 2>&1
+0 */3 * * * /usr/src/app/run.sh  >> /var/log/mail.log 2>&1
