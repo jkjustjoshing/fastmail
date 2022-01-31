@@ -3,6 +3,8 @@ import fetch from 'node-fetch';
 import config from './config';
 
 const mail = async (authorization: string) => {
+  console.log(`\n${(new Date()).toISOString()}: Starting run`)
+
   let session = await (await fetch('https://jmap.fastmail.com/.well-known/jmap', {
     headers: {
       "Authorization": authorization
